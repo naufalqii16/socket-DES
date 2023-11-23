@@ -1,6 +1,5 @@
 import socket
 
-# DES function
 
 # Fungsi untuk mengkonversi dari hexadecimal ke binary
 def hex2bin(s):
@@ -203,8 +202,8 @@ def encrypt(pt, rkb, rk):
 
 	# Initial Permutation
 	pt = permute(pt, initial_perm, 64)
-	print("After initial permutation", bin2hex(pt))
-	print("| Round     |  left      |  Right     |  round key ")
+	# print("After initial permutation", bin2hex(pt))
+	# print("| Round     |  left      |  Right     |  round key ")
 
 	# Splitting
 	left = pt[0:32]
@@ -236,8 +235,8 @@ def encrypt(pt, rkb, rk):
 		# Swapper
 		if(i != 16):
 			left, right = right, left
-		print("| Round ", i, " | ", bin2hex(left),
-			" | ", bin2hex(right), " | ", rk[i-1])
+		# print("| Round ", i, " | ", bin2hex(left),
+		# 	" | ", bin2hex(right), " | ", rk[i-1])
 
 	# Combination
 	combine = left + right
@@ -246,49 +245,49 @@ def encrypt(pt, rkb, rk):
 	cipher_text = permute(combine, final_perm, 64)
 	return cipher_text
 
-def key_exchange_client():
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+def key_exchange_server():
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     host = socket.gethostname()
     port = 12345
-    client_socket.connect((host, port))
+    server_socket.bind((host, port))
+    server_socket.listen()
 
-    print(f"Terhubung ke server di {host}:{port}")
+    print(f"Server berjalan di {host}:{port}")
 
-    # Mengirim kunci awal ke server
-    key = "AABB09182736CCDD"  # Ganti dengan kunci awal yang diinginkan
-    client_socket.send(key.encode())
+    client_socket, addr = server_socket.accept()
+    print(f"Menerima koneksi dari {addr}")
 
-    # Menerima konfirmasi dari server
-    confirmation = client_socket.recv(1024).decode()
-    print(f"Konfirmasi dari server: {confirmation}")
+    # Menerima kunci awal dari client
+    
 
-    # Mengirim plaintext ke server
-    plaintext = "12345678AABBCDEE"  # Ganti dengan plaintext yang diinginkan
-    client_socket.send(plaintext.encode())
-    print(f"Plaintext yang dikirim ke server: {plaintext}")
+    # Kirim konfirmasi bahwa server siap menerima plaintext
+    client_socket.send("Server is ready to receive plaintext.".encode())
+    key = "AABB09182736CCDD"
 
-    # Menerima ciphertext dari server
-    ciphertext = client_socket.recv(1024).decode()
-    print(f"Ciphertext yang diterima dari server: {ciphertext}")
+    # Menerima plaintext dari client
+    # plaintext = client_socket.recv(1024).decode()
+    # print(f"Plaintext yang diterima dari client: {plaintext}")
 
-    # =========================================
+    # Proses enkripsi plaintext menggunakan DES
+    # ========================================================
     key_hex = key
     # Key generation
     # --hex to binary
     key = hex2bin(key)
 
-    print("key setelah jadi biner: ")
-    temp = []
-    itung = 0
-    itung_k = 0
-    for bit in key:
-        itung+=1
-        temp.append(bit)
-        if itung%4 == 0:
-            print(f"biner dari {key_hex[itung_k]} adalah {temp}")
-            temp.clear()
-            itung_k+=1
-    print(f"biner gabungan dari key: {key}\n")
+    # print("key setelah jadi biner: ")
+    # temp = []
+    # itung = 0
+    # itung_k = 0
+    # for bit in key:
+    #     itung+=1
+    #     temp.append(bit)
+    #     if itung%4 == 0:
+    #         print(f"biner dari {key_hex[itung_k]} adalah {temp}")
+    #         temp.clear()
+    #         itung_k+=1
+    # print(f"biner gabungan dari key: {key}\n")
 
     # Tabel angka yang digunakan untuk menjadikan 64 bit initial key menjadi 56 bit efektif key
     keyp = [57, 49, 41, 33, 25, 17, 9,
@@ -342,19 +341,32 @@ def key_exchange_client():
         rkb.append(round_key)
         rk.append(bin2hex(round_key))
 
-
-    # =========================================
+	# ========================================================
+    plaintext = "AABBCDEE12345678"
+    # ========================================================
+    chipertext_h2 = client_socket.recv(1024).decode()
+    print(f"chipertext yang diterima dari h2: {chipertext_h2}")
     # Proses dekripsi ciphertext menggunakan DES (gunakan implementasi DES yang telah Anda buat sebelumnya)
     rkb_rev = rkb[::-1]
     rk_rev = rk[::-1]
-    decrypted_text = bin2hex(encrypt(ciphertext, rkb_rev, rk_rev))
-    print(f"Plaintext setelah didekripsi: {decrypted_text}")
-	
+    decrypted_text = bin2hex(encrypt(chipertext_h2, rkb_rev, rk_rev))
+    print(f"Plaintext dari host 2: {decrypted_text}")
+
+# 	encryption plaintext h1
+    print("Encryption")
+    try:
+        chipertext_h1 = bin2hex(encrypt(plaintext, rkb, rk))
+        client_socket.send(chipertext_h1.encode())
+        print(f"Chipertext yang dikirim ke host 1: {chipertext_h1}")
+    except:
+        print("text harus hexa")
     
 
     # Tutup koneksi
-    client_socket.close()
+    server_socket.close()
 
 if __name__ == "__main__":
-    key_exchange_client()
+    key_exchange_server()
+
+
 
